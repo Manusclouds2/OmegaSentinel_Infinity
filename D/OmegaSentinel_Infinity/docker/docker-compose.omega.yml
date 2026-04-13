@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # Quantum Orchestrator
+  quantum-orchestrator:
+    image: sentinelug/omega-orchestrator:v3.2
+    container_name: sentinel-omega-core
+    environment:
+      - QUANTUM_ENTANGLEMENT_KEY=${QUANTUM_KEY}
+      - CHRONOS_POLYMORPHISM=superposition
+      - DIMENSIONAL_FOLDS=enabled
+    volumes:
+      - /dev/shm:/dev/shm:rw
+      - ./quantum_state:/quantum
+    cpus: 4
+    mem_limit: 8g
+    privileged: true
+    network_mode: "host"
+    restart: unless-stopped
+
+  # Bio-Digital Authentication Gateway
+  biodigital-auth:
+    image: sentinelug/neural-tether:v2.1
+    container_name: sentinel-bio-auth
+    environment:
+      - EEG_SENSOR_ENABLED=true
+      - STRESS_THRESHOLD=0.85
+      - SILENT_ERASURE=true
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0  # EEG sensor
+    cap_add:
+      - SYS_PTRACE
+    restart: always
+
+  # LOPUTH JOSEEPH Dashboard
+  dashboard:
+    image: sentinelug/loputh-joseeph-dashboard:v1.0
+    container_name: loputh-joseeph-c2
+    ports:
+      - "443:8443"  # HTTPS
+      - "8080:8080"  # WebSocket real-time
+    environment:
+      - JWT_SECRET=${DASHBOARD_SECRET}
+      - QUANTUM_TUNNEL=ws://quantum-orchestrator:9090
+      - AUTO_SCALE=true
+    volumes:
+      - ./dashboard_data:/data
+      - ./ssl:/ssl
+    depends_on:
+      - quantum-orchestrator
+      - biodigital-auth
+    restart: always
+
+  # Threat Necromancy Engine
+  necromancy-engine:
+    image: sentinelug/threat-necromancy:v4.7
+    container_name: sentinel-necromancy
+    environment:
+      - DARK_WEB_SCAN=true
+      - THREAT_REANIMATION=enabled
+      - GUARDIAN_DRONES=1000
+    volumes:
+      - ./threat_intel:/intel
+    restart: always
+
+  # Entropy Ghost Network
+  ghost-network:
+    image: sentinelug/entropy-ghost:v2.5
+    container_name: sentinel-ghosts
+    environment:
+      - GHOST_COUNT=1000000
+      - RESOURCE_DRAIN=enabled
+      - BLACKHOLE_TRAPS=true
+    network_mode: "bridge"
+    ports:
+      - "1-65535:1-65535"  # All ports as honeypots
+    restart: always
+
+  # Self-Healing Manager
+  swarm-manager:
+    image: sentinelug/self-healing:v3.0
+    container_name: sentinel-swarm
+    environment:
+      - HEARTBEAT_INTERVAL=100ms
+      - AUTO_RESPAWN=true
+      - FLEET_SIZE=auto
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+
+  # Compliance Shield
+  compliance-shield:
+    image: sentinelug/compliance-gold:v1.2
+    container_name: sentinel-compliance
+    environment:
+      - GDPR_ENABLED=true
+      - DATA_ERASURE=instant
+      - SOC2_COMPLIANT=true
+    volumes:
+      - ./compliance_logs:/logs
+    restart: always
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.99.0.0/24

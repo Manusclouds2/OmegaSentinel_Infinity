@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ω | {{ owner }}</title>
+    <style>
+        :root { --p-gold: #ffd700; --p-neon: #ff00ff; --p-void: #050505; --p-green: #39FF14; }
+        body { 
+            background: var(--p-void); color: white; font-family: 'Orbitron', sans-serif; margin: 0;
+            background-image: radial-gradient(circle, rgba(57, 255, 20, 0.05) 0%, transparent 70%);
+            overflow: hidden;
+        }
+        .header { padding: 25px; text-align: center; border-bottom: 2px solid var(--p-green); background: rgba(0,0,0,0.8); }
+        .title { font-size: 2.2em; letter-spacing: 12px; color: var(--p-green); text-shadow: 0 0 10px var(--p-green); }
+        .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 30px; height: 80vh; }
+        .pod { background: rgba(255,255,255,0.02); border: 1px solid rgba(57, 255, 20, 0.2); padding: 20px; border-radius: 4px; }
+        .table-header { display: grid; grid-template-columns: 1fr 2fr 1fr; padding-bottom: 10px; border-bottom: 1px solid var(--p-green); margin-bottom: 10px; color: var(--p-green); font-size: 0.8em; }
+        .row { display: grid; grid-template-columns: 1fr 2fr 1fr; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'Courier New'; font-size: 0.9em; }
+        .metric-label { color: var(--p-green); margin-top: 20px; font-size: 0.8em; letter-spacing: 2px; }
+        .bar-bg { width: 100%; height: 6px; background: #111; margin-top: 8px; border-radius: 3px; }
+        .bar-fill { height: 100%; background: var(--p-green); width: 0%; transition: 0.5s; border-radius: 3px; box-shadow: 0 0 8px var(--p-green); }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="header"><div class="title">{{ owner }}</div></div>
+    <div class="main-grid">
+        <div class="pod">
+            <div class="table-header"><span>TIME</span><span>TARGET IDENTIFIED</span><span style="text-align: right;">STATUS</span></div>
+            <div id="vector-display">
+                </div>
+        </div>
+        <div class="pod">
+            <div class="metric-label">CORE_ENTROPY</div>
+            <div class="bar-bg"><div id="cpu-fill" class="bar-fill"></div></div>
+            <div class="metric-label">SYNAPSE_LOAD</div>
+            <div class="bar-bg"><div id="ram-fill" class="bar-fill" style="background: var(--p-neon); box-shadow: 0 0 8px var(--p-neon);"></div></div>
+        </div>
+    </div>
+    <script>
+        async function sync() {
+            try {
+                const res = await fetch('/pulse');
+                const data = await res.json();
+                
+                // Update the table
+                document.getElementById('vector-display').innerHTML = data.vectors.map(v => `
+                    <div class="row">
+                        <span style="color: #666;">[${v.timestamp}]</span>
+                        <span style="color: var(--p-gold);">${v.origin} // ${v.signature}</span>
+                        <span style="color: var(--p-neon); text-align: right;">${v.id}</span>
+                    </div>
+                `).join('');
+
+                // Update metric bars
+                document.getElementById('cpu-fill').style.width = data.metrics.entropy + "%";
+                document.getElementById('ram-fill').style.width = data.metrics.synapse_load + "%";
+            } catch(e) { console.error("Neural sync failed"); }
+        }
+        setInterval(sync, 900); // Pulse check every 0.9s
+    </script>
+</body>
+</html>

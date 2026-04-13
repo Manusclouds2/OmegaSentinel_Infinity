@@ -1,0 +1,127 @@
+# Docker Compose Override for Sentinel-UG Client Customization
+# Copy to docker-compose.override.yml and modify as needed
+# This file allows customization without modifying the main docker-compose.yml
+
+version: '3.8'
+
+services:
+  sentinel-client:
+    # Override container name for easier identification
+    container_name: sentinel-${CLIENT_ID:-default}
+    
+    # Custom environment variables (overrides parent values)
+    environment:
+      # Network mode selection
+      DEBUG_MODE: "false"
+      LOG_LEVEL: "INFO"
+      
+      # Custom metrics collection
+      METRICS_COLLECTION_INTERVAL: "30s"
+      METRICS_RETENTION_DAYS: "7"
+      
+      # Threat detection sensitivity
+      THREAT_SENSITIVITY_HIGH: "false"      # Set to true for maximum sensitivity
+      THREAT_MINIMUM_CONFIDENCE: "0.75"
+      
+      # Honeypot configuration
+      HONEYPOT_ENABLED: "true"
+      HONEYPOT_DECOY_COUNT: "5"
+      HONEYPOT_RESPONSE_TIME: "100ms"
+      
+      # Update and self-healing
+      AUTO_HEAL: "true"
+      SELF_REPAIR_ENABLED: "true"
+      UPDATE_CHECK_INTERVAL: "3600s"
+      
+      # Advanced quantum features
+      QUANTUM_KEY_ROTATION: "weekly"
+      QUANTUM_STATE_VERIFICATION: "true"
+      DIMENSIONAL_FOLD_DEPTH: "256"
+      
+      # Performance tuning
+      WORKER_THREADS: "4"
+      CACHE_SIZE_MB: "512"
+      BUFFER_SIZE_KB: "1024"
+    
+    # Resource limits for different deployment scenarios
+    # Uncomment the appropriate section for your use case
+    
+    # Conservative (IoT/Edge devices)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '0.5'
+    #       memory: 256M
+    #     reservations:
+    #       cpus: '0.25'
+    #       memory: 128M
+    
+    # Moderate (Small servers)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+    
+    # Recommended (Large servers)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '4'
+    #       memory: 2048M
+    #     reservations:
+    #       cpus: '2'
+    #       memory: 1024M
+    
+    # Maximum (High-security deployments)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '8'
+    #       memory: 8192M
+    #     reservations:
+    #       cpus: '4'
+    #       memory: 4096M
+    
+    # Additional volumes for custom scenarios
+    # volumes:
+    #   # Custom threat intelligence feeds
+    #   - ./configs/threat-feeds:/opt/threat-feeds:ro
+    #   
+    #   # Custom detection signatures
+    #   - ./configs/detection-rules:/opt/rules:ro
+    #   
+    #   # Persistent state store
+    #   - ./data/sentinel-client:/var/lib/sentinel-client
+    #   
+    #   # Custom scripts for threat response
+    #   - ./scripts:/opt/scripts:ro
+    
+    # Additional device access (uncomment as needed)
+    # devices:
+    #   # GPU access for ML-based threat detection
+    #   - /dev/nvidia0:/dev/nvidia0
+    #   
+    #   # TPM for hardware-based key storage
+    #   - /dev/tpm0:/dev/tpm0
+    #   
+    #   # Random entropy source
+    #   - /dev/urandom:/dev/urandom:ro
+    
+    # Syscalls filtering for enhanced security
+    # sysctls:
+    #   - net.ipv4.ip_forward=1
+    #   - net.ipv4.ip_nonlocal_bind=1
+    #   - net.ipv4.tcp_tw_reuse=1
+    
+    # Labels for metadata and organization
+    labels:
+      sentinel.version: "2.1.0"
+      sentinel.environment: "production"
+      sentinel.protection-level: "omega_full"
+      sentinel.client-id: "${CLIENT_ID:-default}"
+      sentinel.managed-by: "docker-compose"
+      prometheus_scrape: "true"

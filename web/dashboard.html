@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LOPUTHJOSEPH :: Post-Human Control</title>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --quantum-green: #00ff9d;
+            --neural-blue: #00b8ff;
+            --warning-orange: #ffaa00;
+            --danger-red: #ff3e3e;
+            --dark-bg: #05050a;
+            --glass-bg: rgba(0, 20, 10, 0.7);
+            --neon-glow: 0 0 10px rgba(0, 255, 157, 0.5), 0 0 20px rgba(0, 255, 157, 0.2);
+            --border-glow: 1px solid rgba(0, 255, 157, 0.4);
+        }
+
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: crosshair; }
+
+        body {
+            background: black;
+            color: white;
+            font-family: 'Orbitron', 'Segoe UI', monospace;
+            overflow: hidden;
+            height: 100vh;
+            perspective: 1000px;
+        }
+
+        /* Extreme Background FX */
+        .master-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('belogo.png') no-repeat center center;
+            background-size: cover;
+            filter: brightness(0.3) contrast(1.2) grayscale(0.5);
+            z-index: -2;
+        }
+
+        .data-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                linear-gradient(rgba(0, 255, 157, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 157, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            opacity: 0.2;
+            animation: gridMove 20s linear infinite;
+        }
+
+        @keyframes gridMove {
+            from { background-position: 0 0; }
+            to { background-position: 50px 50px; }
+        }
+
+        /* Scanning HUD Frame */
+        .hud-frame {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border: 20px solid transparent;
+            border-image: linear-gradient(to bottom right, var(--quantum-green), transparent, var(--neural-blue)) 1;
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .dashboard-header {
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 2px solid var(--quantum-green);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 0 30px rgba(0, 255, 157, 0.3);
+            backdrop-filter: blur(20px);
+            position: relative;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 2em;
+            color: var(--quantum-green);
+            font-weight: 900;
+            letter-spacing: 5px;
+            text-shadow: var(--neon-glow);
+            text-transform: uppercase;
+        }
+
+        .indicator {
+            padding: 8px 18px;
+            border-radius: 2px;
+            font-size: 0.8em;
+            font-weight: 700;
+            border: 1px solid var(--quantum-green);
+            background: rgba(0, 255, 157, 0.1);
+            color: var(--quantum-green);
+            text-transform: uppercase;
+            box-shadow: inset 0 0 10px rgba(0, 255, 157, 0.2);
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 5px var(--quantum-green); }
+            50% { box-shadow: 0 0 20px var(--quantum-green); }
+        }
+
+        .tab-container {
+            display: flex;
+            height: calc(100vh - 75px);
+            background: rgba(0, 5, 0, 0.4);
+        }
+
+        .tab-sidebar {
+            width: 320px;
+            background: rgba(0, 0, 0, 0.95);
+            border-right: 1px solid rgba(0, 255, 157, 0.3);
+            padding: 30px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .tab-button {
+            width: 90%;
+            margin: 0 auto;
+            padding: 18px 25px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            text-align: left;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%);
+        }
+
+        .tab-button:hover {
+            background: rgba(0, 255, 157, 0.1);
+            color: white;
+            border-color: var(--quantum-green);
+            transform: translateX(10px);
+            box-shadow: -5px 0 15px var(--quantum-green);
+        }
+
+        .tab-button.active {
+            background: rgba(0, 255, 157, 0.2);
+            border-color: var(--quantum-green);
+            color: var(--quantum-green);
+            font-weight: 900;
+            transform: translateX(15px);
+            box-shadow: -10px 0 20px var(--quantum-green);
+        }
+
+        .tab-content {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            background: radial-gradient(circle at center, rgba(0, 50, 30, 0.1) 0%, transparent 70%);
+        }
+
+        .metric-card {
+            background: var(--glass-bg);
+            border: var(--border-glow);
+            border-radius: 0;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .metric-card:hover {
+            background: rgba(0, 40, 20, 0.8);
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: var(--neon-glow);
+        }
+
+        .metric-card::after {
+            content: "";
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 20px; height: 20px;
+            background: var(--quantum-green);
+            clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        }
+
+        .real-time-log {
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid var(--quantum-green);
+            padding: 20px;
+            height: 350px;
+            font-family: 'Courier New', monospace;
+            box-shadow: inset 0 0 30px rgba(0, 255, 157, 0.2);
+        }
+
+        .control-button {
+            background: transparent;
+            border: 1px solid var(--quantum-green);
+            padding: 15px 30px;
+            color: var(--quantum-green);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .control-button:hover {
+            background: var(--quantum-green);
+            color: black;
+            box-shadow: 0 0 30px var(--quantum-green);
+        }
+
+        /* Scrollbar Elite */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--quantum-green); box-shadow: 0 0 10px var(--quantum-green); }
+
+        h2 {
+            font-size: 2em;
+            letter-spacing: 8px;
+            color: var(--quantum-green);
+            text-shadow: var(--neon-glow);
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 4px double var(--quantum-green);
+        }
+
+        .glitch-text {
+            animation: glitchFX 2s infinite;
+        }
+
+        @keyframes glitchFX {
+            0% { transform: translate(0); }
+            1% { transform: translate(-2px, 2px); }
+            2% { transform: translate(2px, -2px); }
+            3% { transform: translate(0); }
+            100% { transform: translate(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="master-bg"></div>
+    <div class="data-overlay"></div>
+    <div class="hud-frame"></div>
+    
+    <div class="dashboard-header">
+        <div class="logo glitch-text">
+            <img src="belogo.png" alt="Logo" style="height: 50px; vertical-align: middle; margin-right: 15px; filter: drop-shadow(0 0 10px var(--quantum-green));">
+            MANUS CLOUDS
+        </div>
+        <div class="status-indicators">
+            <div class="indicator">SOVEREIGNTY: ABSOLUTE</div>
+            <div class="indicator">REALITY: MODIFIABLE</div>
+            <div class="indicator">SOURCE: SYNCED</div>
+            <div class="indicator">SHIELD: TOTAL</div>
+        </div>
+    </div>
+    
+    <div class="tab-container">
+        <!-- Sidebar Tabs -->
+        <div class="tab-sidebar">
+            <button class="tab-button active" onclick="openTab('overview')">
+                🌐 REAL-TIME OVERVIEW
+            </button>
+            <button class="tab-button" onclick="openTab('chronos')">
+                ⏳ CHRONOS POLYMORPHISM
+            </button>
+            <button class="tab-button" onclick="openTab('dimensional')">
+                🌀 DIMENSIONAL FOLDS
+            </button>
+            <button class="tab-button" onclick="openTab('necromancy')">
+                ☠️ THREAT NECROMANCY
+            </button>
+            <button class="tab-button" onclick="openTab('ghosts')">
+                👻 ENTROPY GHOSTS
+            </button>
+            <button class="tab-button" onclick="openTab('quantum')">
+                ⚛️ QUANTUM TRANSACTIONS
+            </button>
+            <button class="tab-button" onclick="openTab('fleet')">
+                🔄 SELF-HEALING FLEET
+            </button>
+            <button class="tab-button" onclick="openTab('compliance')">
+                🛡️ COMPLIANCE SHIELD
+            </button>
+            <button class="tab-button" onclick="openTab('global')">
+                🌍 GLOBAL NERVOUS SYSTEM
+            </button>
+            <button class="tab-button" onclick="openTab('predictive')">
+                🔮 PREDICTIVE INTENT
+            </button>
+            <button class="tab-button admin" onclick="openTab('users')">
+                👥 USER MANAGEMENT
+            </button>
+            <button class="tab-button" onclick="openTab('filescan')">
+                📁 FILE SCAN
+            </button>
+            <button class="tab-button" onclick="openTab('firewall')">
+                🛡️ FIREWALL
+            </button>
+            <button class="tab-button" onclick="openTab('threatmap')">
+                🌍 THREAT MAP
+            </button>
+            <button class="tab-button" onclick="window.location.href='planetary_threats.html'" style="color: var(--warning-orange); border-left-color: var(--warning-orange);">
+                🚀 PLANETARY THREATS
+            </button>
+            <button class="tab-button" onclick="openTab('ai-intelligence')">
+                🧠 AI INTELLIGENCE
+            </button>
+            <button class="tab-button danger" onclick="openTab('omega')">
+                ⚡ OMEGA COMMANDS ⚡
+            </button>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="tab-content">
+            
+            <!-- Real-Time Overview Tab -->
+            <div id="overview" class="tab-pane active">
+                <h2>🌐 REAL-TIME SYSTEM OVERVIEW</h2>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-title">ACTIVE PROTECTIONS</div>
+                        <div class="metric-value" id="activeProtections">256</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">THREATS NEUTRALIZED</div>
+                        <div class="metric-value" id="threatsNeutralized">1,247</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">GHOST HONEYPOTS</div>
+                        <div class="metric-value" id="ghostCount">1,000,000</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">POLYMORPHIC SHIFTS</div>
+                        <div class="metric-value" id="polymorphicShifts">894/sec</div>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 30px;">METRICS TREND (Last 24 Hours)</h3>
+                <canvas id="metricsChart" width="400" height="200" style="background: rgba(0,0,0,0.5); border: 1px solid var(--quantum-green); margin-bottom: 20px;"></canvas>
+                
+                <h3>REAL-TIME THREAT LOG</h3>
+                <div class="real-time-log" id="threatLog">
+                    <!-- Log entries will appear here -->
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button class="control-button" onclick="initiateGlobalScan()">
+                        🔍 INITIATE GLOBAL SCAN
+                    </button>
+                    <button class="control-button" onclick="activateOmegaProtocol()">
+                        ⚡ ACTIVATE OMEGA PROTOCOL
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Chronos Polymorphism Tab -->
+            <div id="chronos" class="tab-pane">
+                <h2>⏳ CHRONOS-LOCKED POLYMORPHISM</h2>
+                <p>Code exists in quantum superposition. Changes based on causal probability.</p>
+                
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-title">SUPERPOSITION STATES</div>
+                        <div class="metric-value">∞</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">CAUSAL SHIFTS/SEC</div>
+                        <div class="metric-value">1.2×10¹⁸</div>
+                    </div>
+                </div>
+                
+                <button class="control-button" onclick="shiftPolymorphism()">
+                    🔀 SHIFT POLYMORPHIC STATE
+                </button>
+                
+                <div class="real-time-log" id="chronosLog"></div>
+            </div>
+            
+            <!-- Add other tab content similarly -->
+            
+            <!-- User Management Tab -->
+            <div id="users" class="tab-pane">
+                <h2>👥 USER MANAGEMENT</h2>
+                <p>Admin access required for user management operations.</p>
+                
+                <div style="margin: 20px 0;">
+                    <h3>Create New User</h3>
+                    <input type="text" id="newUsername" placeholder="Username" style="margin: 5px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                    <input type="text" id="newFullName" placeholder="Full Name" style="margin: 5px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                    <input type="password" id="newPassword" placeholder="Password" style="margin: 5px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                    <select id="newRole" style="margin: 5px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                        <option value="viewer">Viewer</option>
+                        <option value="operator">Operator</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <button class="control-button" onclick="createUser()">Create User</button>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <h3>Current Users</h3>
+                    <button class="control-button" onclick="loadUsers()">Refresh Users</button>
+                    <div id="usersTable" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+            
+            <!-- File Scan Tab -->
+            <div id="filescan" class="tab-pane">
+                <h2>📁 FILE SYSTEM SCAN</h2>
+                <p>Scan a folder for file hashes and optionally look them up on VirusTotal.</p>
+
+                <div style="margin: 20px 0;">
+                    <input type="text" id="scanPath" placeholder="Enter scan path (relative to scan root)" style="width: 60%; padding: 10px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                    <button class="control-button" onclick="runFolderScan()">Scan Folder</button>
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <label style="font-size: 0.9em;">Max files:</label>
+                    <input type="number" id="scanMaxFiles" value="50" min="1" max="1000" style="width: 100px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                    <label style="font-size: 0.9em; margin-left: 20px;">Include subfolders:</label>
+                    <input type="checkbox" id="scanIncludeSub" checked style="transform: scale(1.2); margin-left: 8px;">
+                </div>
+
+                <div id="scanResults" style="margin-top: 20px; max-height: 400px; overflow-y: auto;">
+                    <p>No scan performed yet.</p>
+                </div>
+            </div>
+
+            <!-- Firewall Tab -->
+            <div id="firewall" class="tab-pane">
+                <h2>🛡️ ADVANCED FIREWALL CONTROL</h2>
+                <p>Real-time traffic monitoring and rule management. Professional-grade protection beyond human comprehension.</p>
+
+                <div style="margin: 20px 0;">
+                    <h3>Live Traffic Feed</h3>
+                    <button class="control-button" onclick="loadLiveTraffic()">Refresh Traffic</button>
+                    <div id="trafficFeed" style="margin-top: 10px; max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid var(--quantum-green);">
+                        <p>Loading traffic data...</p>
+                    </div>
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <h3>Firewall Rules</h3>
+                    <button class="control-button" onclick="loadFirewallRules()">Load Rules</button>
+                    <div id="firewallRules" style="margin-top: 10px;"></div>
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <h3>Add New Rule</h3>
+                    <input type="text" id="ruleSource" placeholder="Source IP" style="margin: 5px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                    <input type="text" id="ruleDest" placeholder="Destination IP" style="margin: 5px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                    <input type="number" id="rulePort" placeholder="Port" style="margin: 5px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                    <select id="ruleAction" style="margin: 5px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                        <option value="allow">Allow</option>
+                        <option value="deny">Deny</option>
+                    </select>
+                    <select id="ruleProtocol" style="margin: 5px; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                        <option value="TCP">TCP</option>
+                        <option value="UDP">UDP</option>
+                        <option value="ICMP">ICMP</option>
+                    </select>
+                    <button class="control-button" onclick="addFirewallRule()">Add Rule</button>
+                </div>
+            </div>
+
+            <!-- Threat Map Tab -->
+            <div id="threatmap" class="tab-pane">
+                <h2>🌍 GLOBAL THREAT INTELLIGENCE MAP</h2>
+                <p>Real-time visualization of cyber threats worldwide. Track hacker origins, attack vectors, and target destinations.</p>
+
+                <div id="map" style="height: 600px; width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--quantum-green); margin-top: 20px;">
+                    <p style="text-align: center; padding-top: 250px;">Loading global threat map...</p>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button class="control-button" onclick="loadThreatMap()">Refresh Threats</button>
+                    <button class="control-button danger" onclick="initiateEliteTraceback()">
+                        📡 INITIATE ELITE TRACEBACK
+                    </button>
+                    <div id="threatList" style="margin-top: 10px; max-height: 200px; overflow-y: auto;"></div>
+                </div>
+            </div>
+
+            <!-- AI Intelligence Tab -->
+            <div id="ai-intelligence" class="tab-pane">
+                <h2>🧠 AI INTELLIGENCE & VISUALIZATION</h2>
+                <p>Advanced neural processing nodes for global intelligence synthesis.</p>
+                
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-title">🧠 OMEGA NEURAL AI</div>
+                        <div style="margin-top: 15px;">
+                            <div id="aiChatWindow" style="height: 200px; overflow-y: auto; background: rgba(0,0,0,0.7); border: 1px solid var(--quantum-green); padding: 10px; margin-bottom: 10px; font-family: monospace; font-size: 0.9em;">
+                                <div style="color: var(--quantum-green);">> OMEGA AI ONLINE. HOW CAN I ASSIST YOU, COMMANDER?</div>
+                            </div>
+                            <input type="text" id="aiQuery" placeholder="Ask Omega AI..." style="width: 70%; padding: 8px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                            <button class="control-button" onclick="askOmegaAI()">ASK 🧠</button>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">🖼 VISUALIZE YOUR IDEAS</div>
+                        <div style="margin-top: 15px;">
+                            <a href="https://t.me/nanobanana_gidbot" target="_blank" class="control-button" style="text-decoration: none; display: inline-block;">NanoBanana (Image Gen)</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 30px; padding: 20px; background: rgba(0, 255, 157, 0.05); border: 1px solid var(--quantum-green); border-radius: 10px;">
+                    <h3>👤 ARCHITECT PROFILE</h3>
+                    <p><strong>Username:</strong> @josephloputh</p>
+                    <p><strong>ID:</strong> 5814482523</p>
+                    <p><strong>Name:</strong> Manus Clouds FLIES 🪰</p>
+                    <p><strong>Status:</strong> REGISTERED ARCHITECT</p>
+                    <p><strong>Registered:</strong> <a href="https://t.me/m/ECxXXcW-YWM0" target="_blank" style="color: var(--quantum-green);">Check Registration Date</a></p>
+                </div>
+            </div>
+
+            <!-- Omega Commands Tab -->
+            <div id="omega" class="tab-pane">
+                <h2>⚡ OMEGA COMMAND INTERFACE</h2>
+                <p><strong>WARNING:</strong> Direct quantum-level commands. Use with extreme caution.</p>
+                
+                <div style="margin: 20px 0;">
+                    <input type="text" id="omegaCommand" placeholder="Enter Omega Command" 
+                           style="width: 70%; padding: 10px; background: black; color: white; border: 1px solid var(--quantum-green);">
+                    <button class="control-button danger" onclick="executeOmegaCommand()">
+                        EXECUTE ⚡
+                    </button>
+                </div>
+                
+                <h3>Available Omega Commands:</h3>
+                <pre style="background: rgba(0,0,0,0.5); padding: 15px; border-radius: 5px; font-family: monospace;">
+// System Control
+OMEGA::ACTIVATE_FULL_PROTECTION
+OMEGA::DEPLOY_DIMENSIONAL_FOLD --count=256 --isolate=true
+OMEGA::INITIATE_CHRONOS_SUPERPOSITION --speed=lightspeed
+OMEGA::SPAWN_GHOST_HONEYPOTS --count=1000000 --entropy-source=/dev/urandom
+
+// Threat Response
+OMEGA::NECROMANCY_ACTIVATE --target=THREAT_ID --reanimate=true
+OMEGA::QUANTUM_ISOLATE --entity=COMPROMISED_NODE --permanent=true
+OMEGA::SILENT_ERASURE --trigger=high_stress --scope=all_keys
+
+// Global Operations
+OMEGA::GLOBAL_SCAN --depth=quantum --scope=worldwide
+OMEGA::UPDATE_THREAT_INTEL --sources=darkweb,mitre,virustotal
+OMEGA::DEPLOY_SELF_HEALING --nodes=all --auto-respawn=true
+
+// Client Management
+OMEGA::DEPLOY_TO_CLIENT --id=CLIENT_ID --token=QUANTUM_TOKEN
+OMEGA::ACTIVATE_BIO_TETHER --client=CLIENT_ID --neural-scan=true
+OMEGA::REMOTE_WIPE --client=CLIENT_ID --confirm=true
+
+// Emergency Protocols
+OMEGA::ACTIVATE_KILL_SWITCH --reason=physical_theft
+OMEGA::QUANTUM_SCRAMBLE --scope=entire_network
+OMEGA::SELF_DESTRUCT --authorization=TRIPLE_CONFIRM
+                </pre>
+                
+                <div class="real-time-log" id="omegaCommandLog"></div>
+                
+                <div style="margin-top: 30px; border-top: 2px solid red; padding-top: 20px;">
+                    <button class="control-button danger" onclick="initiateSelfDestruct()">
+                        ⚠️ INITIATE SELF-DESTRUCT SEQUENCE ⚠️
+                    </button>
+                    <p style="color: #ff5555; font-size: 0.9em;">
+                        Requires triple confirmation and bio-digital authorization.
+                    </p>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script>
+        // Require authentication token
+        const token = localStorage.getItem('omega_token');
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        let currentUser = null;
+
+        async function loadCurrentUser() {
+            try {
+                const response = await fetch('/users/me', { headers: getAuthHeaders() });
+                if (response.ok) {
+                    currentUser = await response.json();
+                }
+            } catch (error) {
+                console.error('Failed to load user info');
+            }
+        }
+
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            };
+        }
+
+        // Tab Management
+        function openTab(tabName) {
+            // Check if the tab is already active
+            const targetTab = document.getElementById(tabName);
+            const targetButton = Array.from(document.querySelectorAll('.tab-button')).find(btn => 
+                btn.getAttribute('onclick').includes(`'${tabName}'`)
+            );
+
+            if (targetTab.classList.contains('active')) {
+                // If already active, just return to keep it open
+                return;
+            }
+
+            // Hide all tabs
+            document.querySelectorAll('.tab-pane').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Remove active from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            targetTab.classList.add('active');
+
+            // Activate button
+            if (targetButton) {
+                targetButton.classList.add('active');
+            } else if (event && event.target) {
+                event.target.classList.add('active');
+            }
+
+            // If opening Omega tab, require confirmation
+            if (tabName === 'omega') {
+                const confirmed = confirm("⚠️ OMEGA COMMAND INTERFACE\n\nThis interface provides direct quantum-level access.\nUnauthorized use may cause irreversible damage.\n\nProceed?");
+                if (!confirmed) {
+                    openTab('overview');
+                    return;
+                }
+
+                // Require bio-authentication for Omega tab
+                initiateBioVerification();
+            }
+
+            // If opening Users tab, check admin role
+            if (tabName === 'users') {
+                if (!currentUser || currentUser.role !== 'admin') {
+                    alert('Admin access required for user management');
+                    openTab('overview');
+                    return;
+                }
+                // Load users when opening tab
+                loadUsers();
+            }
+        }
+
+        // Real-time WebSocket connection for live data
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/omega?token=${encodeURIComponent(token)}`);
+
+        function handleMessage(data) {
+            // Update metrics in real-time
+            if (data.type === 'metrics') {
+                document.getElementById('activeProtections').textContent = data.activeProtections;
+                document.getElementById('threatsNeutralized').textContent = data.threatsNeutralized.toLocaleString();
+                document.getElementById('ghostCount').textContent = data.ghostCount.toLocaleString();
+                document.getElementById('polymorphicShifts').textContent = data.polymorphicShifts + '/sec';
+            }
+
+            // Add to threat log
+            if (data.type === 'threat') {
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry threat';
+                logEntry.innerHTML = `
+                    <strong>[${new Date().toISOString()}]</strong><br>
+                    ${data.message}<br>
+                    <small>Source: ${data.source} | Action: ${data.action}</small>
+                `;
+                document.getElementById('threatLog').prepend(logEntry);
+
+                // Keep log manageable
+                const logs = document.getElementById('threatLog').children;
+                if (logs.length > 50) {
+                    logs[logs.length - 1].remove();
+                }
+
+                // Visual alert for high-priority threats
+                if (data.priority === 'critical') {
+                    flashTab('necromancy');
+                    playAlertSound();
+                }
+            }
+        }
+
+        ws.onmessage = function(event) {
+            try {
+                handleMessage(JSON.parse(event.data));
+            } catch (err) {
+                console.warn('Invalid WS message', err);
+            }
+        };
+
+        ws.onclose = function() {
+            console.warn('WebSocket closed; real-time updates paused.');
+        };
+
+        ws.onerror = function(err) {
+            console.error('WebSocket error', err);
+        };
+        
+        // Omega Command Execution
+        async function executeOmegaCommand() {
+            const command = document.getElementById('omegaCommand').value.trim();
+            
+            if (!command.startsWith('OMEGA::')) {
+                alert('Invalid Omega command format. Must start with OMEGA::');
+                return;
+            }
+            
+            // Triple confirmation for dangerous commands
+            const dangerousCommands = ['SELF_DESTRUCT', 'QUANTUM_SCRAMBLE', 'REMOTE_WIPE'];
+            if (dangerousCommands.some(cmd => command.includes(cmd))) {
+                if (!confirm(`⚠️ DANGEROUS COMMAND:\n\n${command}\n\nThis may cause irreversible damage. Confirm?`)) {
+                    return;
+                }
+                
+                // Bio-authentication required
+                const bioAuth = await verifyBioAuthentication();
+                if (!bioAuth) {
+                    alert('Bio-digital authentication failed. Command aborted.');
+                    return;
+                }
+                
+                // Final confirmation
+                if (!confirm('FINAL CONFIRMATION REQUIRED:\n\nAre you absolutely sure?')) {
+                    return;
+                }
+            }
+            
+            // Execute command via Quantum API
+            try {
+                const response = await fetch('/api/omega/execute', {
+                    method: 'POST',
+                    headers: {
+                        ...getAuthHeaders(),
+                        'X-Quantum-Authorization': 'OMEGA_LEVEL'
+                    },
+                    body: JSON.stringify({
+                        command: command,
+                        timestamp: Date.now(),
+                        entropyHash: await generateEntropyHash()
+                    })
+                });
+                
+                const result = await response.json();
+                
+                // Log command execution
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry protection';
+                logEntry.innerHTML = `
+                    <strong>[OMEGA COMMAND EXECUTED]</strong><br>
+                    ${command}<br>
+                    <small>Result: ${result.status} | Quantum Entanglement Verified</small>
+                `;
+                document.getElementById('omegaCommandLog').prepend(logEntry);
+                
+                // Clear input
+                document.getElementById('omegaCommand').value = '';
+                
+            } catch (error) {
+                console.error('Omega command failed:', error);
+                alert('Command execution failed. Quantum entanglement may be disrupted.');
+            }
+        }
+        
+        // System Control Functions
+        async function initiateGlobalScan() {
+            const response = await fetch('/api/omega/scan/global', {
+                method: 'POST',
+                headers: {
+                    ...getAuthHeaders(),
+                    'X-Quantum-Protocol': 'v3'
+                }
+            });
+            
+            alert('Global quantum scan initiated. Estimated completion: 3.2 seconds.');
+        }
+        
+        async function activateOmegaProtocol() {
+            const confirmed = confirm('Activate Omega Protocol?\n\nThis will engage all quantum defenses at maximum power.');
+            
+            if (confirmed) {
+                const response = await fetch('/api/omega/protocol/activate', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ level: 'maximum' })
+                });
+                
+                alert('Omega Protocol activated. All defenses at quantum maximum.');
+                
+                // Visual feedback
+                document.body.style.animation = 'pulseOmega 1s infinite';
+                setTimeout(() => {
+                    document.body.style.animation = '';
+                }, 5000);
+            }
+        }
+        
+        async function shiftPolymorphism() {
+            const response = await fetch('/api/chronos/shift', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ 
+                    mode: 'causal_probability',
+                    speed: 'lightspeed' 
+                })
+            });
+            
+            alert('Chronos-locked polymorphism shifted. Attack surface now in quantum superposition.');
+        }
+        
+        // Emergency Functions
+        async function initiateSelfDestruct() {
+            if (!confirm('⚠️ SELF-DESTRUCT SEQUENCE\n\nThis will irreversibly destroy all data and encryption keys.\nQuantum entanglement will be permanently severed.\n\nThis action cannot be undone.')) {
+                return;
+            }
+            
+            // Bio-digital authorization required
+            const bioAuth = await verifyBioAuthentication();
+            if (!bioAuth) {
+                alert('Self-destruct requires live bio-digital authorization.');
+                return;
+            }
+            
+            // Enter destruction code
+            const destructionCode = prompt('Enter OMEGA DESTRUCTION CODE (12 digits):');
+            
+            if (destructionCode === '478236915032') { // Example code
+                if (confirm('FINAL CONFIRMATION:\n\nInitiate quantum self-destruct?')) {
+                    // Execute self-destruct
+                    const response = await fetch('/api/omega/self-destruct', {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: JSON.stringify({ 
+                            code: destructionCode,
+                            reason: 'manual_override',
+                            timestamp: Date.now()
+                        })
+                    });
+                    
+                    alert('Self-destruct initiated. Quantum wipe in progress...');
+                    
+                    // Countdown
+                    let countdown = 10;
+                    const countdownInterval = setInterval(() => {
+                        document.title = `SELF-DESTRUCT IN ${countdown}`;
+                        countdown--;
+                        
+                        if (countdown < 0) {
+                            clearInterval(countdownInterval);
+                            document.body.innerHTML = `
+                                <div style="height:100vh;display:flex;align-items:center;justify-content:center;background:black;color:#ff5555;font-size:3em;">
+                                    ⚛️ QUANTUM WIPE COMPLETE ⚛️
+                                </div>
+                            `;
+                        }
+                    }, 1000);
+                }
+            } else {
+                alert('Invalid destruction code. Self-destruct aborted.');
+                
+                // Log failed attempt
+                await fetch('/api/security/log', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({
+                        event: 'failed_self_destruct_attempt',
+                        timestamp: Date.now(),
+                        ip: await getClientIP()
+                    })
+                });
+            }
+        }
+        
+        // Utility Functions
+        async function verifyBioAuthentication() {
+            // Simulated bio-auth verification
+            return new Promise(resolve => {
+                setTimeout(() => resolve(true), 1000);
+            });
+        }
+        
+        async function generateEntropyHash() {
+            const entropy = window.crypto.getRandomValues(new Uint32Array(16));
+            return Array.from(entropy).map(x => x.toString(16)).join('');
+        }
+        
+        async function getClientIP() {
+            const response = await fetch('https://api.ipify.org?format=json');
+            const data = await response.json();
+            return data.ip;
+        }
+        
+        function flashTab(tabName) {
+            const tabBtn = Array.from(document.querySelectorAll('.tab-button'))
+                .find(btn => btn.onclick.toString().includes(tabName));
+            
+            if (tabBtn) {
+                const originalColor = tabBtn.style.backgroundColor;
+                tabBtn.style.backgroundColor = '#ff5555';
+                tabBtn.style.color = 'white';
+                
+                setTimeout(() => {
+                    tabBtn.style.backgroundColor = originalColor;
+                    tabBtn.style.color = '';
+                }, 3000);
+                
+                // Flash browser tab title
+                let flashCount = 0;
+                const flashInterval = setInterval(() => {
+                    document.title = document.title === '⚠️ THREAT ALERT!' 
+                        ? 'LOPUTH JOSEEPH' 
+                        : '⚠️ THREAT ALERT!';
+                    
+                    flashCount++;
+                    if (flashCount > 10) {
+                        clearInterval(flashInterval);
+                        document.title = 'LOPUTH JOSEEPH';
+                    }
+                }, 500);
+            }
+        }
+        
+        function playAlertSound() {
+            // Play alert sound (implementation depends on browser policies)
+            try {
+                const audio = new Audio('/alerts/quantum_threat.mp3');
+                audio.play();
+            } catch (e) {
+                console.log('Audio alert not available');
+            }
+        }
+        
+        async function askOmegaAI() {
+            const queryInput = document.getElementById('aiQuery');
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            const chatWindow = document.getElementById('aiChatWindow');
+            
+            // Add user message
+            const userMsg = document.createElement('div');
+            userMsg.style.color = '#fff';
+            userMsg.style.marginTop = '10px';
+            userMsg.innerHTML = `<strong>COMMANDER:</strong> ${query}`;
+            chatWindow.appendChild(userMsg);
+            
+            queryInput.value = '';
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            try {
+                const response = await fetch('/api/omega/ai', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ query })
+                });
+
+                const result = await response.json();
+                
+                // Add AI response
+                const aiMsg = document.createElement('div');
+                aiMsg.style.color = 'var(--quantum-green)';
+                aiMsg.style.marginTop = '5px';
+                aiMsg.innerHTML = `<strong>OMEGA AI:</strong> ${result.response.replace(/\n/g, '<br>')}`;
+                chatWindow.appendChild(aiMsg);
+                
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            } catch (error) {
+                console.error('AI Query failed:', error);
+                const errorMsg = document.createElement('div');
+                errorMsg.style.color = '#ff5555';
+                errorMsg.innerHTML = `<strong>SYSTEM ERROR:</strong> Neural node connection failed.`;
+                chatWindow.appendChild(errorMsg);
+            }
+        }
+
+        async function initiateEliteTraceback() {
+            const ip = prompt('Enter Hacker IP for Military-Grade Traceback:');
+            if (!ip) return;
+            
+            const threatList = document.getElementById('threatList');
+            const statusDiv = document.createElement('div');
+            statusDiv.style.color = '#ffaa00';
+            statusDiv.style.marginTop = '10px';
+            statusDiv.innerHTML = `📡 <strong>INITIATING ELITE TRACEBACK:</strong> Piercing all anonymization layers for ${ip}...`;
+            threatList.prepend(statusDiv);
+            
+            try {
+                const response = await fetch('/api/elite/locate-hacker', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ ip: ip, signature: 'ELITE_TRACE_REQUEST' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'LOCATED') {
+                    statusDiv.style.color = 'var(--quantum-green)';
+                    statusDiv.innerHTML = `
+                        ✅ <strong>ANONYMITY PIERCED:</strong> Hacker Located!<br>
+                        - True IP: ${result.true_ip}<br>
+                        - Origin: ${result.origin_city}, ${result.origin_country}<br>
+                        - Attribution: ${result.attribution}<br>
+                        - Accuracy: ${result.accuracy}<br>
+                        - Hops Pierced: ${result.hops_identified.join(' -> ')}
+                    `;
+                    
+                    // Update map if available
+                    if (window.map) {
+                        const marker = L.marker([result.latitude, result.longitude]).addTo(window.map);
+                        marker.bindPopup(`<b>Elite Traceback Result</b><br>${result.true_ip}<br>${result.attribution}`).openPopup();
+                        window.map.setView([result.latitude, result.longitude], 10);
+                    }
+                } else {
+                    statusDiv.style.color = '#ff5555';
+                    statusDiv.innerHTML = `❌ <strong>TRACEBACK FAILED:</strong> ${result.message || 'Unknown error'}`;
+                }
+            } catch (error) {
+                console.error('Traceback failed:', error);
+                statusDiv.style.color = '#ff5555';
+                statusDiv.innerHTML = `❌ <strong>SYSTEM ERROR:</strong> Traceback sequence disrupted.`;
+            }
+        }
+
+        // Fallback simulation when not connected to a real backend
+        setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) return; // server provides live data when connected
+
+            // Simulate real-time updates
+            if (Math.random() > 0.7) {
+                handleMessage({
+                    type: 'threat',
+                    message: `Quantum anomaly detected in dimensional fold #${Math.floor(Math.random() * 256)}`,
+                    source: `Source IP: ${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+                    action: 'Neutralized via chronos-shift',
+                    priority: Math.random() > 0.9 ? 'critical' : 'normal'
+                });
+            }
+
+            // Update metrics
+            handleMessage({
+                type: 'metrics',
+                activeProtections: Math.floor(Math.random() * 50) + 250,
+                threatsNeutralized: Math.floor(Math.random() * 100) + 1200,
+                ghostCount: Math.floor(Math.random() * 10000) + 990000,
+                polymorphicShifts: Math.floor(Math.random() * 100) + 850
+            });
+
+        }, 2000); // Update every 2 seconds
+        
+        // User Management Functions
+        async function createUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const fullName = document.getElementById('newFullName').value.trim();
+            const password = document.getElementById('newPassword').value.trim();
+            const role = document.getElementById('newRole').value;
+
+            if (!username || !password) {
+                alert('Username and password required');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/users/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('omega_token')}`
+                    },
+                    body: JSON.stringify({ username, full_name: fullName, password, role })
+                });
+
+                if (response.ok) {
+                    alert('User created successfully');
+                    loadUsers();
+                    // Clear form
+                    document.getElementById('newUsername').value = '';
+                    document.getElementById('newFullName').value = '';
+                    document.getElementById('newPassword').value = '';
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + (error.detail || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Create user error:', error);
+                alert('Network error');
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users/', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('omega_token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    const users = await response.json();
+                    displayUsers(users);
+                } else {
+                    alert('Failed to load users');
+                }
+            } catch (error) {
+                console.error('Load users error:', error);
+                alert('Network error');
+            }
+        }
+
+        function displayUsers(users) {
+            const table = document.getElementById('usersTable');
+            if (users.length === 0) {
+                table.innerHTML = '<p>No users found</p>';
+                return;
+            }
+
+            let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
+            html += '<tr style="background: rgba(0,255,157,0.1);"><th style="padding: 8px; border: 1px solid var(--quantum-green);">Username</th><th>Full Name</th><th>Role</th><th>Status</th><th>Actions</th></tr>';
+
+            users.forEach(user => {
+                const status = user.disabled ? 'Disabled' : 'Active';
+                html += `<tr>
+                    <td style="padding: 8px; border: 1px solid var(--quantum-green);">${user.username}</td>
+                    <td>${user.full_name || ''}</td>
+                    <td>${user.role}</td>
+                    <td>${status}</td>
+                    <td>
+                        <button onclick="editUser('${user.username}')" style="margin: 2px; padding: 4px 8px;">Edit</button>
+                        <button onclick="deleteUser('${user.username}')" style="margin: 2px; padding: 4px 8px; background: #ff5555;">Delete</button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</table>';
+            table.innerHTML = html;
+        }
+
+        function editUser(username) {
+            // Simple edit - in real app, open modal
+            alert('Edit user: ' + username + ' (not implemented yet)');
+        }
+
+        async function deleteUser(username) {
+            if (!confirm(`Delete user ${username}?`)) return;
+
+            try {
+                const response = await fetch(`/api/users/${username}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('omega_token')}`
+                    }
+                });
+
+                if (response.ok) {
+                    alert('User deleted');
+                    loadUsers();
+                } else {
+                    alert('Failed to delete user');
+                }
+            } catch (error) {
+                console.error('Delete user error:', error);
+                alert('Network error');
+            }
+        }
+
+        async function runFolderScan() {
+            const path = document.getElementById('scanPath').value.trim();
+            const maxFiles = parseInt(document.getElementById('scanMaxFiles').value, 10) || 50;
+            const includeSub = document.getElementById('scanIncludeSub').checked;
+
+            if (!path) {
+                alert('Enter a scan path (relative to scan root)');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/scan/folder', {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify({ path, include_subdirs: includeSub, max_files: maxFiles })
+                });
+
+                const result = await response.json();
+                if (!response.ok) {
+                    alert('Scan failed: ' + (result.detail || result.error || 'unknown error'));
+                    return;
+                }
+                displayScanResults(result);
+            } catch (error) {
+                console.error('Folder scan error:', error);
+                alert('Network error');
+            }
+        }
+
+        function displayScanResults(result) {
+            const container = document.getElementById('scanResults');
+            if (!result.files || result.files.length === 0) {
+                container.innerHTML = '<p>No files scanned.</p>';
+                return;
+            }
+
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<tr style="background: rgba(0,255,157,0.1);"><th style="padding: 8px; border: 1px solid var(--quantum-green);">Path</th><th>SHA256</th><th>VirusTotal</th></tr>';
+            for (const file of result.files) {
+                const vt = file.virustotal ? JSON.stringify(file.virustotal).slice(0, 160) + '...' : 'n/a';
+                html += `<tr><td style="padding: 8px; border: 1px solid var(--quantum-green);">${file.path}</td><td>${file.sha256 || ''}</td><td>${vt}</td></tr>`;
+            }
+            html += '</table>';
+            container.innerHTML = html;
+        }
+
+        // Load user info on page load
+        loadCurrentUser();
+        loadMetricsChart();
+
+        async function loadMetricsChart() {
+            try {
+                const response = await fetch('/api/analytics/metrics?hours=24', { headers: getAuthHeaders() });
+                if (response.ok) {
+                    const data = await response.json();
+                    renderMetricsChart(data);
+                }
+            } catch (error) {
+                console.error('Failed to load metrics:', error);
+            }
+        }
+
+        function renderMetricsChart(data) {
+            const ctx = document.getElementById('metricsChart').getContext('2d');
+            const labels = data.map(d => new Date(d.timestamp * 1000).toLocaleTimeString());
+            const activeProtections = data.map(d => d.activeProtections);
+            const threatsNeutralized = data.map(d => d.threatsNeutralized);
+            const ghostCount = data.map(d => d.ghostCount);
+            const polymorphicShifts = data.map(d => d.polymorphicShifts);
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Active Protections',
+                        data: activeProtections,
+                        borderColor: 'var(--quantum-green)',
+                        backgroundColor: 'rgba(0, 255, 157, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'Threats Neutralized',
+                        data: threatsNeutralized,
+                        borderColor: '#ff6b6b',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'Ghost Count',
+                        data: ghostCount,
+                        borderColor: 'var(--neural-blue)',
+                        backgroundColor: 'rgba(0, 184, 255, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'Polymorphic Shifts',
+                        data: polymorphicShifts,
+                        borderColor: '#ffaa00',
+                        backgroundColor: 'rgba(255, 170, 0, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: 'white'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'white'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+    </script>
+        @keyframes pulseOmega {
+            0% { box-shadow: inset 0 0 50px rgba(0, 255, 157, 0); }
+            50% { box-shadow: inset 0 0 50px rgba(0, 255,

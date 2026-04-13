@@ -1,0 +1,15 @@
+{
+  "name": "LOPUTHJOSEPH Control",
+  "short_name": "LOPUTHJOSEPH",
+  "start_url": "/telegram-app",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#00ff00",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/ios-filled/512/00ff00/shield.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

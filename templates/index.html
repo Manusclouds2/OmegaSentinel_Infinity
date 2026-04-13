@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ owner }} | SENTINEL-UG</title>
+    <style>
+        body { 
+            /* THE BACKGROUND LOGO */
+            background: linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.85)), url('/static/logo.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: #0f0; 
+            font-family: 'Consolas', monospace; 
+            margin: 0; 
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px;
+            border-bottom: 2px solid #0f0;
+            background: rgba(0,0,0,0.5);
+        }
+
+        .owner-name { font-size: 3.5em; letter-spacing: 20px; text-transform: uppercase; text-shadow: 0 0 20px #0f0; }
+
+        .container { padding: 40px; display: flex; justify-content: center; }
+
+        .panel { 
+            border: 1px solid #0f03; 
+            background: rgba(0, 0, 0, 0.9); 
+            width: 90%;
+            height: 60vh; 
+            padding: 25px; 
+            border-radius: 15px;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0,255,0,0.1);
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; border-bottom: 2px solid #0f0; padding: 15px; color: #0f0; font-size: 1.1em; }
+        td { padding: 12px; border-bottom: 1px solid #0f01; font-size: 1em; }
+
+        .threat { color: #f00; font-weight: bold; text-shadow: 0 0 10px #f00; }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #0f0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="owner-name">{{ owner }}</div>
+        <div style="letter-spacing: 5px; opacity: 0.6; margin-top: 10px;">SENTINEL-UG // SOVEREIGN ENGINE</div>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <table>
+                <thead>
+                    <tr>
+                        <th>TIME</th>
+                        <th>TARGET IDENTIFIED</th>
+                        <th>STATUS</th>
+                    </tr>
+                </thead>
+                <tbody id="grid">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function sync() {
+            try {
+                const r = await fetch('/kinetic-map');
+                const d = await r.json();
+                document.getElementById('grid').innerHTML = d.connections.map(c => `
+                    <tr>
+                        <td>${c.timestamp.split('T')[1].split('.')[0]}</td>
+                        <td>${c.remote}</td>
+                        <td class="${c.status === 'NEUTRALIZED' ? 'threat' : ''}">${c.status}</td>
+                    </tr>
+                `).join('');
+            } catch(e) {}
+        }
+        setInterval(sync, 2000);
+        sync();
+    </script>
+</body>
+</html>

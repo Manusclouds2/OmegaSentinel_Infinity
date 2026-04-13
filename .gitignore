@@ -1,0 +1,35 @@
+# --- Security & Secrets ---
+.env
+*.env
+configs/.env
+!configs/.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.class
+.venv/
+env/
+
+# --- Rust ---
+/target/
+Cargo.lock
+
+# --- Databases & Logs ---
+data/*.db
+data/*.sqlite
+logs/*.log
+*.db-journal
+
+# --- Windows System Files ---
+Thumbs.db
+desktop.ini
+
+# --- Deployment Build Files ---
+dist/
+build/
+
+# --- Flash Drive Deployment Extras ---
+OmegaSentinel_Eternal/
+start_watchdog.bat
+portable_boot.py

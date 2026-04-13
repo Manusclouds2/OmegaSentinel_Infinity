@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LOPUTHJOSEPH | Post-Human Shield</title>
+    <link rel="manifest" href="/static/manifest.json">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --quantum-green: #00ff9d;
+            --neural-blue: #00b8ff;
+            --danger-red: #ff3e3e;
+            --dark-bg: #05050a;
+            --neon-glow: 0 0 10px rgba(0, 255, 157, 0.5);
+        }
+
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--dark-bg);
+            color: var(--quantum-green);
+            font-family: 'Orbitron', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), url('belogo.png') no-repeat center center fixed;
+            background-size: cover;
+        }
+
+        /* HUD Scanlines */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid var(--quantum-green);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            text-shadow: var(--neon-glow);
+        }
+
+        .header h2 {
+            margin: 0;
+            letter-spacing: 4px;
+            font-size: 1.4rem;
+            text-transform: uppercase;
+        }
+
+        .status-card {
+            background: rgba(0, 255, 157, 0.05);
+            border: 1px solid var(--quantum-green);
+            padding: 20px;
+            border-radius: 4px;
+            margin-bottom: 25px;
+            box-shadow: inset 0 0 15px rgba(0, 255, 157, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .status-item span:last-child {
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 5px var(--quantum-green);
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 15px;
+            background: rgba(0, 255, 157, 0.1);
+            color: var(--quantum-green);
+            border: 1px solid var(--quantum-green);
+            border-radius: 2px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn i {
+            margin-right: 12px;
+            font-size: 1.1rem;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+            background: var(--quantum-green);
+            color: black;
+            box-shadow: 0 0 20px var(--quantum-green);
+        }
+
+        .btn.secondary {
+            background: transparent;
+            border-color: rgba(0, 255, 157, 0.3);
+            color: rgba(0, 255, 157, 0.7);
+        }
+
+        .btn.danger {
+            border-color: var(--danger-red);
+            color: var(--danger-red);
+            background: rgba(255, 62, 62, 0.05);
+        }
+
+        h3 {
+            font-size: 0.7rem;
+            color: rgba(0, 255, 157, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .logs {
+            font-family: 'Courier New', monospace;
+            font-size: 10px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid rgba(0, 255, 157, 0.2);
+            padding: 15px;
+            border-radius: 4px;
+            height: 150px;
+            overflow-y: auto;
+            color: #99ffcc;
+            box-shadow: inset 0 0 10px rgba(0,0,0,1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2 class="glitch">MANUS CLOUDS</h2>
+        <div style="font-size: 0.6rem; letter-spacing: 3px; color: rgba(255,255,255,0.5); margin-top: 5px;">ELITE OMEGA SHIELD ACTIVE</div>
+    </div>
+
+    <div class="status-card">
+        <h3>SYTEM TELEMETRY</h3>
+        <div class="status-item">
+            <span>DEFENSE LAYER</span>
+            <span>POST-HUMAN</span>
+        </div>
+        <div class="status-item">
+            <span>NEURAL SYNC</span>
+            <span>99.98%</span>
+        </div>
+        <div class="status-item">
+            <span>CHRONOS LOCK</span>
+            <span>ENGAGED</span>
+        </div>
+        <div class="status-item">
+            <span>SHIELD STATUS</span>
+            <span style="color: var(--quantum-green);">OPTIMAL</span>
+        </div>
+    </div>
+
+    <h3>ELITE COMMANDS</h3>
+    <a href="planetary_threats.html" class="btn">
+        <i class="fas fa-globe-americas"></i> PLANETARY THREATS
+    </a>
+    <button class="btn" onclick="openDashboard()">
+        <i class="fas fa-terminal"></i> OMEGA DASHBOARD
+    </button>
+    <button class="btn secondary" onclick="askAI()">
+        <i class="fas fa-brain"></i> OMEGA NEURAL AI
+    </button>
+    <button class="btn danger" onclick="emergencyLockdown()">
+        <i class="fas fa-shield-halved"></i> EMERGENCY LOCKDOWN
+    </button>
+
+    <h3>LIVE SECURITY LOGS</h3>
+    <div class="logs" id="logContainer">
+        [SYSTEM] Neural link established...<br>
+        [SYSTEM] Chronos-shift detected...<br>
+        [SYSTEM] All nodes operational.<br>
+    </div>
+
+    <script>
+        const webapp = window.Telegram.WebApp;
+        webapp.expand();
+        webapp.ready();
+
+        function openDashboard() {
+            window.location.href = 'dashboard.html';
+        }
+
+        function askAI() {
+            webapp.showPopup({
+                title: 'OMEGA NEURAL AI',
+                message: 'Neural interface initiated. Please speak your command.',
+                buttons: [{text: 'PROCEED', type: 'default'}]
+            });
+        }
+
+        function emergencyLockdown() {
+            webapp.showConfirm('Initiate planetary-scale emergency lockdown?', (confirmed) => {
+                if (confirmed) {
+                    webapp.showAlert('LOCKDOWN INITIATED. SEVERING ALL EXTERNAL LINKS.');
+                }
+            });
+        }
+
+        // Simulate log updates
+        const logs = [
+            "Anomaly detected in Data Fold #7",
+            "Traceback complete: Threat neutralized",
+            "Quantum transaction verified",
+            "Shield resonance at maximum",
+            "Scanning dark web exit nodes..."
+        ];
+
+        setInterval(() => {
+            const logContainer = document.getElementById('logContainer');
+            const newLog = logs[Math.floor(Math.random() * logs.length)];
+            const time = new Date().toLocaleTimeString();
+            logContainer.innerHTML = `[${time}] ${newLog}<br>` + logContainer.innerHTML;
+        }, 5000);
+    </script>
+</body>
+</html>

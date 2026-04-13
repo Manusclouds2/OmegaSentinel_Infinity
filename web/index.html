@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NEMESIS-AI | Neural Flux Dashboard</title>
+    <style>
+        :root {
+            --quantum-green: #00ff9d;
+            --dark-bg: #05050a;
+        }
+
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        }
+
+        body { 
+            background: url('belogo.png') no-repeat center center fixed; 
+            background-size: cover; 
+            color: var(--quantum-green); 
+            font-family: 'Orbitron', 'Courier New', monospace; 
+            margin: 0; 
+            overflow: hidden; 
+            height: 100vh;
+        }
+
+        /* Scanline and CRT effects */
+        body::before {
+            content: " ";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            z-index: 10;
+            pointer-events: none;
+            opacity: 0.2;
+        }
+
+        #header { 
+            border-bottom: 2px solid var(--quantum-green); 
+            padding: 20px; 
+            text-align: center; 
+            background: rgba(0, 0, 0, 0.85); 
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.3);
+        }
+
+        #map-container { 
+            height: 55vh; 
+            width: 100%; 
+            border: 1px solid rgba(0, 255, 157, 0.2); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: relative; 
+            background: rgba(0, 0, 0, 0.6); 
+        }
+
+        #terminal { 
+            height: 35vh; 
+            background: rgba(0, 10, 0, 0.9); 
+            padding: 20px; 
+            overflow-y: scroll; 
+            border-top: 2px solid var(--quantum-green); 
+            font-size: 0.85em;
+            text-shadow: 0 0 5px var(--quantum-green);
+        }
+
+        .glitch { 
+            animation: glitch 1.5s linear infinite; 
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            font-weight: bold;
+        }
+
+        @keyframes glitch { 
+            0% { opacity: 1; transform: skew(0deg); } 
+            20% { opacity: 0.8; transform: skew(10deg); } 
+            40% { opacity: 1; transform: skew(-10deg); } 
+            60% { opacity: 0.9; transform: skew(0deg); } 
+            100% { opacity: 1; } 
+        }
+
+        .architect-tag { 
+            color: #fff; 
+            font-weight: bold; 
+            text-shadow: 0 0 15px var(--quantum-green); 
+            letter-spacing: 2px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.5); }
+        ::-webkit-scrollbar-thumb { background: var(--quantum-green); }
+
+        .loading-bar {
+            width: 300px;
+            height: 4px;
+            background: rgba(0, 255, 157, 0.1);
+            margin: 15px auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading-bar::after {
+            content: "";
+            position: absolute;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--quantum-green);
+            animation: loading 2s infinite;
+        }
+
+        @keyframes loading {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <img src="belogo.png" alt="Logo" style="height: 60px; vertical-align: middle; margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--quantum-green));">
+        <h1 class="glitch">NEMESIS-AI: OMEGA-SOVEREIGN CORE</h1>
+        <div class="loading-bar"></div>
+        <p>COMMANDER: <span class="architect-tag">Manus Clouds FLIES 🪰</span> | SECURITY LEVEL: ABSOLUTE SOVEREIGN</p>
+    </div>
+    <div id="map-container">
+        <div style="font-size: 20px; color: #0a0;">[ INITIALIZING 3D GEOLOCATION LATTICE... ]</div>
+        </div>
+    <div id="terminal" id="output">
+        <p>> AUTHENTICATING ARCHITECT: LOPUTH JOSEPH... SUCCESS.</p>
+        <p>> SCANNING GLOBAL NETWORK ENTROPY...</p>
+        <p>> STATUS: AUTONOMOUS DEFENSE STANDBY.</p>
+    </div>
+</body>
+</html>

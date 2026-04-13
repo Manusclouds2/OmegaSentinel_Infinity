@@ -1,0 +1,151 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15
+    container_name: omega-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-omega_db}
+      POSTGRES_USER: ${POSTGRES_USER:-omega_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-omega_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./configs/db-init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-omega_user} -d ${POSTGRES_DB:-omega_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - omega-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: omega-redis
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-omega-redis}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - omega-network
+
+  # Main Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: omega-app
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-omega_user}:${POSTGRES_PASSWORD:-omega_password}@db:5432/${POSTGRES_DB:-omega_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-omega-redis}@redis:6379
+      OMEGA_SECRET: ${OMEGA_SECRET:-supersecretkey}
+      JWT_SECRET: ${JWT_SECRET:-jwt-secret}
+      VIRUSTOTAL_API_KEY: ${VIRUSTOTAL_API_KEY}
+      SHODAN_API_KEY: ${SHODAN_API_KEY}
+      MAXMIND_API_KEY: ${MAXMIND_API_KEY}
+      SMTP_SERVER: ${SMTP_SERVER}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USERNAME: ${SMTP_USERNAME}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      ALERT_EMAIL: ${ALERT_EMAIL}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SCAN_ROOT: /app/scan
+      FIREWALL_MODE: ${FIREWALL_MODE:-passive}
+      PACKET_CAPTURE: ${PACKET_CAPTURE:-true}
+    ports:
+      - "8080:80"
+      - "8443:443"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./logs:/app/logs
+      - ./scan:/app/scan
+      - ./configs/quantum-keys:/app/configs/quantum-keys
+    networks:
+      - omega-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:latest
+    container_name: omega-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./configs/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./logs/nginx:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - omega-network
+    restart: unless-stopped
+
+  # Zeek Network Intrusion Detection System
+  zeek:
+    image: zeek/zeek:latest
+    container_name: omega-zeek
+    volumes:
+      - ./logs/zeek:/zeek/logs
+      - /var/log/zeek:/zeek/packet-logs
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      - omega-network
+    command: zeek -i eth0 -C -R /zeek/share/zeek/site/local.zeek
+    restart: unless-stopped
+
+  # Prometheus Metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: omega-prometheus
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - omega-network
+    restart: unless-stopped
+
+  # Grafana Visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: omega-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-omega}
+      GF_INSTALL_PLUGINS: grafana-worldmap-panel
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./configs/grafana-dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - omega-network
+    restart: unless-stopped
+
+networks:
+  omega-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

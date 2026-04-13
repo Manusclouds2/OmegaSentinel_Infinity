@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MANUS CLOUDS :: PLANETARY THREAT MONITOR</title>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        :root {
+            --quantum-green: #00ff9d;
+            --danger-red: #ff3e3e;
+            --neon-blue: #00b8ff;
+            --dark-bg: #05050a;
+            --hud-glow: 0 0 15px rgba(0, 255, 157, 0.4);
+        }
+
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; cursor: crosshair; }
+
+        body {
+            background: black;
+            color: white;
+            font-family: 'Orbitron', 'Courier New', monospace;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* HUD Background FX */
+        .master-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('belogo.png') no-repeat center center;
+            background-size: cover;
+            filter: brightness(0.2) contrast(1.5) grayscale(0.8);
+            z-index: -2;
+        }
+
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0.15;
+        }
+
+        #global-map {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 1;
+        }
+
+        /* HUD Overlays */
+        .hud-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            border: 20px solid transparent;
+            border-image: linear-gradient(to bottom right, var(--quantum-green), transparent, var(--neon-blue)) 1;
+            opacity: 0.2;
+        }
+
+        .header {
+            position: absolute;
+            top: 30px; left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px 60px;
+            border: 2px solid var(--quantum-green);
+            box-shadow: var(--hud-glow);
+            backdrop-filter: blur(10px);
+            clip-path: polygon(10% 0%, 90% 0%, 100% 50%, 90% 100%, 10% 100%);
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            letter-spacing: 10px;
+            color: var(--quantum-green);
+            text-shadow: 0 0 15px var(--quantum-green);
+        }
+
+        .sidebar-right {
+            position: absolute;
+            top: 120px; right: 30px;
+            width: 350px;
+            bottom: 30px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid var(--quantum-green);
+            padding: 20px;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            backdrop-filter: blur(15px);
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .threat-feed {
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            border-top: 1px solid rgba(0, 255, 157, 0.3);
+            padding-top: 15px;
+        }
+
+        .threat-item {
+            margin-bottom: 12px;
+            padding: 10px;
+            border-left: 3px solid var(--danger-red);
+            background: rgba(255, 62, 62, 0.05);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(50px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .threat-item.intercepted {
+            border-left-color: var(--quantum-green);
+            background: rgba(0, 255, 157, 0.05);
+        }
+
+        .stats-panel {
+            position: absolute;
+            top: 120px; left: 30px;
+            width: 300px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid var(--quantum-green);
+            padding: 20px;
+            z-index: 50;
+            backdrop-filter: blur(15px);
+        }
+
+        .stat-box {
+            margin-bottom: 15px;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: var(--quantum-green);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: 900;
+            text-shadow: 0 0 10px var(--quantum-green);
+        }
+
+        .return-btn {
+            position: absolute;
+            bottom: 30px; left: 30px;
+            padding: 15px 30px;
+            background: rgba(0, 255, 157, 0.1);
+            border: 1px solid var(--quantum-green);
+            color: var(--quantum-green);
+            font-weight: 900;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            z-index: 60;
+            transition: 0.3s;
+        }
+
+        .return-btn:hover {
+            background: var(--quantum-green);
+            color: black;
+            box-shadow: 0 0 30px var(--quantum-green);
+        }
+
+        /* Custom Map Icons */
+        .attack-marker {
+            background: rgba(255, 62, 62, 0.5);
+            border: 2px solid var(--danger-red);
+            border-radius: 50%;
+            animation: ripple 1.5s infinite;
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="master-bg"></div>
+    <div class="scanlines"></div>
+    <div class="hud-overlay"></div>
+
+    <div class="header">
+        <h1>PLANETARY THREAT MONITOR</h1>
+        <p style="font-size: 0.8em; letter-spacing: 5px; color: rgba(255,255,255,0.6);">MANUS CLOUDS :: ELITE ATTRIBUTION CORE</p>
+    </div>
+
+    <div class="stats-panel">
+        <div class="stat-box">
+            <div class="stat-label">ACTIVE ATTACKS</div>
+            <div class="stat-value" id="activeAttacks">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">NEUTRALIZED (24H)</div>
+            <div class="stat-value" id="neutralized">42,891</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">CAUSAL SYNC STATUS</div>
+            <div class="stat-value" style="color: var(--quantum-green);">INSTANTANEOUS</div>
+        </div>
+
+        <div style="margin-top: 30px; border-top: 1px solid rgba(0,255,157,0.3); padding-top: 20px;">
+            <div class="stat-label">PLANETARY SECTOR</div>
+            <select id="planetSelector" style="width: 100%; background: black; color: var(--quantum-green); border: 1px solid var(--quantum-green); padding: 5px; margin-top: 10px; font-family: 'Orbitron'; font-size: 0.7em;">
+                <option value="earth">TERRA (EARTH)</option>
+                <option value="mars">MARS COLONY</option>
+                <option value="jupiter">JUPITER STATIONS</option>
+                <option value="saturn">SATURN RINGS</option>
+                <option value="proxima-b">PROXIMA CENTAURI B</option>
+                <option value="deep-space">DEEP SPACE RELAYS</option>
+            </select>
+        </div>
+    </div>
+
+    <div id="global-map"></div>
+
+    <div class="sidebar-right">
+        <h3 style="color: var(--quantum-green); letter-spacing: 3px; font-size: 0.9em; border-bottom: 1px solid rgba(0,255,157,0.3); padding-bottom: 10px;">LIVE ATTRIBUTION FEED</h3>
+        <div class="threat-feed" id="threatFeed">
+            <!-- Feed items will be injected here -->
+        </div>
+    </div>
+
+    <a href="dashboard.html" class="return-btn">RETURN TO CORE</a>
+
+    <script>
+        // Initialize Map
+        const map = L.map('global-map', {
+            center: [20, 0],
+            zoom: 2,
+            zoomControl: false,
+            attributionControl: false
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+        const threatFeed = document.getElementById('threatFeed');
+        const activeAttacksEl = document.getElementById('activeAttacks');
+        let activeCount = 0;
+
+        const threatActors = ['VOID WALKER', 'QUANTUM SHADOW', 'APT_28', 'LAZARUS', 'DARK_SIDE', 'OMEGA_UNKNOWN'];
+        const targets = ['Central Node', 'Data Fold #4', 'Quantum Core', 'Bio-Tether Alpha', 'Causal Layer'];
+        const attackTypes = ['DDoS Flood', 'Neural Infiltration', 'Brute Force Bypass', 'SQL Injection (Advanced)', 'Zero-Day exploit', 'Worm Propagation'];
+
+        const planetData = {
+            earth: { name: 'TERRA (EARTH)', neutralized: 42891, color: '#00ff9d' },
+            mars: { name: 'MARS COLONY', neutralized: 12405, color: '#ff5555' },
+            jupiter: { name: 'JUPITER STATIONS', neutralized: 8122, color: '#ffaa00' },
+            saturn: { name: 'SATURN RINGS', neutralized: 3450, color: '#00b8ff' },
+            'proxima-b': { name: 'PROXIMA CENTAURI B', neutralized: 892, color: '#ff00ff' },
+            'deep-space': { name: 'DEEP SPACE RELAYS', neutralized: 120, color: '#ffffff' }
+        };
+
+        let currentPlanet = 'earth';
+
+        document.getElementById('planetSelector').addEventListener('change', (e) => {
+            currentPlanet = e.target.value;
+            const data = planetData[currentPlanet];
+            document.getElementById('neutralized').innerText = data.neutralized.toLocaleString();
+            
+            // Visual shift
+            document.querySelector('.hud-overlay').style.borderImage = `linear-gradient(to bottom right, ${data.color}, transparent) 1`;
+            
+            // Randomly pan the map to simulate looking at a different location/planet
+            map.panTo([(Math.random() * 40) - 20, (Math.random() * 40) - 20]);
+            
+            addThreat(`[SECTOR SHIFT] Monitoring ${data.name}...`);
+        });
+
+        function addThreat(customMsg = null) {
+            const lat = (Math.random() * 140) - 70;
+            const lon = (Math.random() * 360) - 180;
+            const actor = threatActors[Math.floor(Math.random() * threatActors.length)];
+            const target = targets[Math.floor(Math.random() * targets.length)];
+            const type = attackTypes[Math.floor(Math.random() * attackTypes.length)];
+            const ip = `${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+
+            // Add marker to map
+            const marker = L.divIcon({ 
+                className: 'attack-marker', 
+                iconSize: [10, 10],
+                html: `<div style="background:${planetData[currentPlanet].color}; border-radius:50%; width:100%; height:100%;"></div>`
+            });
+            const mapMarker = L.marker([lat, lon], { icon: marker }).addTo(map);
+
+            // Add to feed
+            const item = document.createElement('div');
+            item.className = 'threat-item';
+            if (customMsg) {
+                item.innerHTML = `<div style="color:var(--quantum-green); font-weight:bold;">${customMsg}</div>`;
+            } else {
+                item.innerHTML = `
+                    <div style="font-weight:bold; color:var(--danger-red);">[${type.toUpperCase()}]</div>
+                    <div style="font-size:0.9em; margin-top:5px;">
+                        <strong>ACTOR:</strong> ${actor}<br>
+                        <strong>TARGET:</strong> ${target}<br>
+                        <strong>SOURCE:</strong> ${ip}<br>
+                        <strong>SECTOR:</strong> ${planetData[currentPlanet].name}
+                    </div>
+                `;
+            }
+            threatFeed.prepend(item);
+
+            if (!customMsg) {
+                activeCount++;
+                activeAttacksEl.innerText = activeCount;
+
+                // Simulate Interception after 3 seconds
+                setTimeout(() => {
+                    item.className = 'threat-item intercepted';
+                    item.innerHTML += `<div style="color:var(--quantum-green); font-weight:bold; margin-top:5px;">>> NEUTRALIZED BY ELITE SHIELD</div>`;
+                    map.removeLayer(mapMarker);
+                    activeCount--;
+                    activeAttacksEl.innerText = activeCount;
+                }, 3000);
+            } else {
+                setTimeout(() => threatFeed.removeChild(item), 5000);
+            }
+
+            // Keep feed clean
+            if (threatFeed.children.length > 20) {
+                threatFeed.removeChild(threatFeed.lastChild);
+            }
+        }
+
+        // Random attacks
+        setInterval(() => {
+            if (Math.random() > 0.4) addThreat();
+        }, 1500);
+
+        // Initial burst
+        for(let i=0; i<5; i++) setTimeout(addThreat, i*500);
+    </script>
+</body>
+</html>

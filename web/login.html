@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LOPUTH JOSEEPH :: Login</title>
+    <style>
+        :root {
+            --quantum-green: #00ff9d;
+            --neural-blue: #00b8ff;
+            --dark-bg: #05050a;
+        }
+
+        @font-face {
+            font-family: 'Orbitron';
+            src: url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: black;
+            font-family: 'Orbitron', 'Courier New', monospace;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* Matrix-like background effect */
+        .bg-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('belogo.png') no-repeat center center;
+            background-size: cover;
+            opacity: 0.3;
+            filter: grayscale(100%) brightness(0.5);
+            z-index: -1;
+        }
+
+        .scanlines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 3px 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .login-box {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--quantum-green);
+            padding: 40px;
+            width: 450px;
+            box-shadow: 0 0 30px rgba(0, 255, 157, 0.2);
+            backdrop-filter: blur(15px);
+            position: relative;
+            z-index: 2;
+            animation: boxEnter 0.8s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+
+        @keyframes boxEnter {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-img {
+            height: 80px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px var(--quantum-green));
+        }
+
+        .logo-text {
+            color: var(--quantum-green);
+            font-size: 1.8em;
+            letter-spacing: 4px;
+            text-shadow: 0 0 10px var(--quantum-green);
+            font-weight: bold;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            color: var(--quantum-green);
+            margin-bottom: 8px;
+            font-size: 0.7em;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 255, 157, 0.3);
+            color: white;
+            font-size: 1em;
+            font-family: 'Courier New', monospace;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--quantum-green);
+            background: rgba(0, 255, 157, 0.05);
+            box-shadow: 0 0 15px rgba(0, 255, 157, 0.2);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            background: transparent;
+            border: 1px solid var(--quantum-green);
+            color: var(--quantum-green);
+            font-weight: bold;
+            font-size: 0.9em;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-button:hover {
+            background: var(--quantum-green);
+            color: black;
+            box-shadow: 0 0 20px var(--quantum-green);
+        }
+
+        .login-button::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(45deg);
+            transition: 0.5s;
+            pointer-events: none;
+        }
+
+        .login-button:hover::after {
+            left: 120%;
+        }
+
+        .error {
+            margin-top: 15px;
+            color: #ff5555;
+            font-size: 0.8em;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            min-height: 1.2em;
+        }
+
+        .status-text {
+            margin-top: 20px;
+            color: rgba(0, 255, 157, 0.5);
+            font-size: 0.6em;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .glitch {
+            animation: glitch 1s linear infinite;
+        }
+
+        @keyframes glitch {
+            2%, 64% { transform: translate(2px, 0) skew(0deg); }
+            4%, 60% { transform: translate(-2px, 0) skew(0deg); }
+            62% { transform: translate(0, 0) skew(5deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-overlay"></div>
+    <div class="scanlines"></div>
+    
+    <div class="login-box">
+        <div class="logo-container">
+            <img src="belogo.png" alt="Logo" class="logo-img">
+            <div class="logo-text glitch">MANUS CLOUDS</div>
+        </div>
+
+        <div class="input-group">
+            <label>Authentication Identity</label>
+            <input id="username" type="text" placeholder="COMMANDER ID" autocomplete="username" />
+        </div>
+
+        <div class="input-group">
+            <label>Security Key</label>
+            <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+        </div>
+
+        <button class="login-button" onclick="login()">Initiate Connection</button>
+
+        <div class="error" id="error"></div>
+        <div class="status-text">SYSTEM STATUS: OMNI-KINETIC SECURE | LEVEL 5 ENCRYPTION ACTIVE</div>
+    </div>
+
+    <script>
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorEl = document.getElementById('error');
+
+            errorEl.textContent = '';
+
+            if (!username || !password) {
+                errorEl.textContent = 'Username and password are required.';
+                return;
+            }
+
+            const form = new URLSearchParams();
+            form.append('username', username);
+            form.append('password', password);
+
+            try {
+                const response = await fetch('/auth/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: form.toString(),
+                });
+
+                if (!response.ok) {
+                    const body = await response.json().catch(() => ({}));
+                    errorEl.textContent = body.detail || 'Authentication failed.';
+                    return;
+                }
+
+                const data = await response.json();
+                localStorage.setItem('omega_token', data.access_token);
+                window.location.href = '/dashboard.html';
+            } catch (err) {
+                errorEl.textContent = 'Unable to reach the server.';
+            }
+        }
+    </script>
+</body>
+</html>
